@@ -70,6 +70,7 @@ namespace AutoMinesweeper
         private bool _IsEnableWindow;
         private bool _IsAutoResetGame;
         private bool _IsOpenRandomCell;
+        private bool _HasImageSearch2020;
         private int _TimeDelayOpenCell;
 
         private List<int[]> CellRandom = new List<int[]>();
@@ -83,7 +84,7 @@ namespace AutoMinesweeper
             IsEnableWindow = true;
             IsAutoResetGame = true;
             IsOpenRandomCell = true;
-            TimeDelayOpenCell = 2;
+            HasImageSearch2020 = false;
         }
 
         public bool IsEnableWindow 
@@ -126,8 +127,25 @@ namespace AutoMinesweeper
                 OnPropertyChanged();
             }
         }
-        private bool IsGameLose => Control.GetPixelFromWindow("title", TITLE_GAME, GameLoseX, GameLoseY) == 0;
-        private bool IsGameWin => Control.GetPixelFromWindow("title", TITLE_GAME, GameWinX, GameWinY) == 0;
+        public bool HasImageSearch2020
+        {
+            get => _HasImageSearch2020;
+            set
+            {
+                _HasImageSearch2020 = value;
+                if (_HasImageSearch2020)
+                {
+                    TimeDelayOpenCell = 2;
+                }
+                else
+                {
+                    TimeDelayOpenCell = 7;
+                }    
+                OnPropertyChanged();
+            }
+        }
+        private bool IsGameLose => GetPixel(TITLE_GAME, GameHwnd, GameLoseX, GameLoseY) == 0;
+        private bool IsGameWin => GetPixel(TITLE_GAME, GameHwnd, GameWinX, GameWinY) == 0;
         private bool ShouldPauseOpenRandomCell
         {
             get
@@ -200,18 +218,26 @@ namespace AutoMinesweeper
             ResetCellRandom();
             return true;
         }
+        private int GetPixel(string title, IntPtr hWnd, int x, int y)
+        {
+            if (HasImageSearch2020)
+            {
+                return Control.GetPixelFromWindow("title", title, x, y);
+            }
+            return Control.GetPixelFromWindow(hWnd, x, y);
+        }
 
         private int GetValueCell(int i, int j)
         {
             int x = BASE_CELL_X + j * (CELL_SIZE) + OFFSET_COLOR_CELL_X;
             int y = BASE_CELL_Y + i * (CELL_SIZE) + OFFSET_COLOR_CELL_Y;
-            int color = Control.GetPixelFromWindow("title", TITLE_GAME, x, y);
+            int color = GetPixel(TITLE_GAME, GameHwnd, x, y);
             switch (color)
             {
                 case COLOR_0:
                     x = BASE_CELL_X + j * (CELL_SIZE) + 1;
                     y = BASE_CELL_Y + i * (CELL_SIZE) + 1;
-                    if (Control.GetPixelFromWindow("title", TITLE_GAME, x, y) != COLOR_0)
+                    if (GetPixel(TITLE_GAME, GameHwnd, x, y) != COLOR_0)
                     {
                         return CELL_NULL;
                     }

@@ -35,6 +35,10 @@
                     IsChecked="{Binding IsAutoResetGame}"
                     IsEnabled="{Binding IsOpenRandomCell}">
                 </CheckBox>
+                <CheckBox
+                    Content="Use Image Search 2020"
+                    IsChecked="{Binding HasImageSearch2020}">
+                </CheckBox>
             </StackPanel>
             <DockPanel Grid.Row="1">
                 <Label

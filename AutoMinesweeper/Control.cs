@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace AutoMinesweeper
 {
@@ -29,6 +31,23 @@ namespace AutoMinesweeper
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool GetWindowRect(IntPtr hWnd, ref RECT lpRect);
+        [DllImport("user32.dll")]
+        static extern IntPtr GetDC(IntPtr hwnd);
+        [DllImport("user32.dll")]
+        static extern Int32 ReleaseDC(IntPtr hwnd, IntPtr hdc);
+        [DllImport("gdi32.dll")]
+        static extern uint GetPixel(IntPtr hdc, int nXPos, int nYPos);
+
+        static public Color GetPixelColor(IntPtr hwnd, int x, int y)
+        {
+            IntPtr hdc = GetDC(hwnd);
+            uint pixel = GetPixel(hdc, x, y);
+            ReleaseDC(hwnd, hdc);
+            Color color = Color.FromArgb((int)(pixel & 0x000000FF),
+                            (int)(pixel & 0x0000FF00) >> 8,
+                            (int)(pixel & 0x00FF0000) >> 16);
+            return color;
+        }
         public static IntPtr MakeLParamFromXY(int x, int y)
         {
             return (IntPtr)((y << 16) | x);
@@ -90,6 +109,12 @@ namespace AutoMinesweeper
                     return result;
                 }
             }
+            return result;
+        }
+        public static int GetPixelFromWindow(IntPtr hWnd, int x, int y)
+        {
+            Color color = GetPixelColor(hWnd, x, y);
+            int result = 65536 * color.R + 256 * color.G + color.B;
             return result;
         }
     }

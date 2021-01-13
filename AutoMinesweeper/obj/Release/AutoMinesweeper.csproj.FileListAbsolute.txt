@@ -19,3 +19,4 @@ E:\LinhTinh\CSharp\AutoMinesweeper\AutoMinesweeper\obj\Release\AutoMinesweeper.c
 E:\LinhTinh\CSharp\AutoMinesweeper\AutoMinesweeper\obj\Release\AutoMinesweeper.csproj.CopyComplete
 E:\LinhTinh\CSharp\AutoMinesweeper\AutoMinesweeper\obj\Release\AutoMinesweeper.exe
 E:\LinhTinh\CSharp\AutoMinesweeper\AutoMinesweeper\obj\Release\AutoMinesweeper.pdb
+E:\LinhTinh\CSharp\AutoMinesweeper\AutoMinesweeper\obj\Release\AutoMinesweeper.csprojAssemblyReference.cache
