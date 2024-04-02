@@ -27,4 +27,7 @@
 		</PackageReference>
 		<PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
 	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\ImageSearch2020\ImageSearch2020.csproj" />
+	</ItemGroup>
 </Project>
