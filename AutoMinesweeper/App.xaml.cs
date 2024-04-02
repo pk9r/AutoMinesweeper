@@ -1,17 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Runtime.Versioning;
 using System.Windows;
 
-namespace AutoMinesweeper
+using AutoMinesweeper.ViewModels;
+
+namespace AutoMinesweeper;
+
+/// <summary>
+/// Interaction logic for App.xaml
+/// </summary>
+[SupportedOSPlatform("windows5.0")]
+public partial class App : Application
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App : Application
-    {
-    }
+    public static AutoMinesweeperViewModel AutoMinesweeperViewModel { get; } = new ();
 }

@@ -1,121 +1,118 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Net.Http;
+using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Windows;
 
-namespace AutoMinesweeper
+using Windows.Win32;
+using Windows.Win32.Foundation;
+
+namespace AutoMinesweeper;
+
+internal class Control
 {
-    public class Control
+    private const uint CLR_INVALID = 0xFFFFFFFF;
+
+    [SupportedOSPlatform("windows5.0")]
+    internal static COLORREF GetPixelColor(HWND hwnd, int x, int y)
     {
-        public struct RECT
-        {
-            public int Left;
-            public int Top;
-            public int Right;
-            public int Bottom;
-        }
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool IsWindowVisible(IntPtr hWnd);
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-        [DllImport("user32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetWindowRect(IntPtr hWnd, ref RECT lpRect);
-        [DllImport("user32.dll")]
-        static extern IntPtr GetDC(IntPtr hwnd);
-        [DllImport("user32.dll")]
-        static extern Int32 ReleaseDC(IntPtr hwnd, IntPtr hdc);
-        [DllImport("gdi32.dll")]
-        static extern uint GetPixel(IntPtr hdc, int nXPos, int nYPos);
+        var hdc = PInvoke.GetDC(hwnd);
 
-        static public Color GetPixelColor(IntPtr hwnd, int x, int y)
-        {
-            IntPtr hdc = GetDC(hwnd);
-            uint pixel = GetPixel(hdc, x, y);
-            ReleaseDC(hwnd, hdc);
-            Color color = Color.FromArgb((int)(pixel & 0x000000FF),
-                            (int)(pixel & 0x0000FF00) >> 8,
-                            (int)(pixel & 0x00FF0000) >> 16);
-            return color;
-        }
-        public static IntPtr MakeLParamFromXY(int x, int y)
-        {
-            return (IntPtr)((y << 16) | x);
-        }
-        public static IntPtr FindWindowHandle(string className, string windowName)
-        {
-            return FindWindow(className, windowName);
-        }
+        var pixel = PInvoke.GetPixel(hdc, x, y);
 
-        public static RECT GetWindowRect(IntPtr hWnd)
-        {
-            RECT lpRect = default(RECT);
-            GetWindowRect(hWnd, ref lpRect);
-            return lpRect;
-        }
+        _ = PInvoke.ReleaseDC(hwnd, hdc);
 
-        public static void ControlClick(IntPtr controlHandle, int x, int y)
-        {
-            IntPtr lParam = MakeLParamFromXY(x, y);
-            PostMessage(controlHandle, 513, new IntPtr(0), lParam);
-            PostMessage(controlHandle, 514, new IntPtr(0), lParam);
-        }
+        return pixel;
+    }
 
-        public static void SendKeyBoardDown(IntPtr handle, int key)
-        {
-            PostMessage(handle, 256, new IntPtr((int)key), new IntPtr(0));
-        }
-        public static int GetPixelFromWindow(string SType, string SValue, int X, int Y, bool PW = false)
-        {
-            int result = -1;
-            using (WebClient client = new WebClient())
+    private static LPARAM MakeLParamFromXY(int x, int y)
+    {
+        return (y << 16) | x;
+    }
+
+    [SupportedOSPlatform("windows5.0")]
+    public static void ControlClick(HWND hWnd, int x, int y)
+    {
+        var lParam = MakeLParamFromXY(x, y);
+        _ = PInvoke.PostMessage(hWnd, 513, 0, lParam);
+        _ = PInvoke.PostMessage(hWnd, 514, 0, lParam);
+
+        //PInvoke.GetWindowRect(hWnd, out RECT rect);
+
+        //PInvoke.SetCursorPos(rect.left + x, rect.top + y);
+        //PInvoke.SendInput([new INPUT
+        //{
+        //    type = INPUT_TYPE.INPUT_MOUSE,
+        //    Anonymous = new()
+        //    {
+        //        mi = new MOUSEINPUT
+        //        {
+        //            dx = (int)(x * 65535 / rect.right),
+        //            dy = (int)(y * 65535 / rect.bottom),
+        //            dwFlags = MOUSE_EVENT_FLAGS.MOUSEEVENTF_MOVE | MOUSE_EVENT_FLAGS.MOUSEEVENTF_ABSOLUTE
+        //        }
+        //    }
+        //}], 1);
+    }
+
+    [SupportedOSPlatform("windows5.0")]
+    public static void SendKeyDown(HWND hWnd, uint key)
+    {
+        _ = PInvoke.PostMessage(hWnd, 256, wParam: key, 0);
+    }
+
+    [SupportedOSPlatform("windows5.0")]
+    public static int GetPixelFromWindow(HWND hWnd, int x, int y)
+    {
+        var colorRef = GetPixelColor(hWnd, x, y);
+
+        var b = (int)(colorRef & 0x00FF0000) >> 16;
+        var g = (int)(colorRef & 0x0000FF00) >> 8;
+        var r = (int)(colorRef & 0x000000FF);
+
+        return (r << 16) | (g << 8) | b;
+    }
+
+    public static async Task<int> GetPixelFromWindowAsync(
+        string SType, string SValue, int X, int Y,
+        bool PW = false)
+    {
+        var result = -1;
+
+        var stringContent = new StringContent( 
+            $$"""
             {
+                "SType": "{{SType}}",
+                "SValue": "{{SValue}}",
+                "X": {{X}},
+                "Y": {{Y}},
+                "PW": {{PW.ToString().ToLowerInvariant()}}
+            }
+            """);
+
+        using (var client = new HttpClient())
+        {
+            try
+            {
+                var response = await client.PostAsync(
+                    "http://localhost:2020/getPixelFromWindow", stringContent);
+                response.EnsureSuccessStatusCode();
+                var responseString = await response.Content.ReadAsStringAsync();
+
                 try
                 {
-                    string response = client.UploadString(
-                        "http://localhost:2020/getPixelFromWindow",
-                        "POST",
-                        "{" +
-                            $"\n\t\"SType\": \"{SType}\"," +
-                            $"\n\t\"SValue\": \"{SValue}\"," +
-                            $"\n\t\"X\": {X}," +
-                            $"\n\t\"Y\": {Y}," +
-                            $"\n\t\"PW\": {PW.ToString().ToLower()}" +
-                        "}"
-                    );
-                    try
-                    {
-                        string pattern = @"{\""Color\"":\""(\w+)\""}";
-                        Match m = Regex.Matches(response, pattern)[0];
-                        result = Int32.Parse(m.Groups[1].Value, System.Globalization.NumberStyles.HexNumber);
-                    }
-                    catch
-                    {
-                        return result;
-                    }
+                    var m = Regex.Matches(responseString, @"{\""Color\"":\""(\w+)\""}")[0];
+                    result = int.Parse(m.Groups[1].Value, System.Globalization.NumberStyles.HexNumber);
                 }
-                catch (WebException)
+                catch
                 {
                     return result;
                 }
             }
-            return result;
+            catch
+            {
+                return result;
+            }
         }
-        public static int GetPixelFromWindow(IntPtr hWnd, int x, int y)
-        {
-            Color color = GetPixelColor(hWnd, x, y);
-            int result = 65536 * color.R + 256 * color.G + color.B;
-            return result;
-        }
+        return result;
     }
 }

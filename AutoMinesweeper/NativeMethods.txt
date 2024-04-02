@@ -1,0 +1,9 @@
+PostMessage
+IsWindowVisible
+GetWindowRect
+FindWindow
+GetDC
+ReleaseDC
+GetPixel
+SetCursorPos
+SendInput
